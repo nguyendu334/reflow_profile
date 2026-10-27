@@ -1,0 +1,34 @@
+{
+  "home": {
+    "title": "Reflow Monitoring System",
+    "subtitle": "SEOUL SEMI - Production Quality Monitoring",
+    "selectReport": "Select a report to view",
+    "trendDescription": "View Reflow temperature trends by model, month and year from Excel files.",
+    "profileDescription": "View Temperature Profile reports in PDF format."
+  },
+  "report": {
+    "trend": "Temperature Trend",
+    "profile": "Temperature Profile",
+    "trendSubtitle": "Reflow Temperature Trend",
+    "profileSubtitle": "Temperature Profile Report",
+    "view": "View Report",
+    "loading": "Loading...",
+    "backHome": "Back to Home"
+  },
+  "filter": {
+    "model": "Model",
+    "line": "Line",
+    "year": "Year",
+    "month": "Month",
+    "date": "Date",
+    "shift": "Shift",
+    "dayShift": "Day Shift",
+    "nightShift": "Night Shift"
+  },
+  "common": {
+    "backHome": "Back to Home",
+    "language": "Language",
+    "lightMode": "Light Mode",
+    "darkMode": "Dark Mode"
+  }
+}
