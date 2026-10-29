@@ -5,6 +5,7 @@ import axios from "axios";
 
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   CircularProgress,
@@ -15,6 +16,7 @@ import {
   Paper,
   Select,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material";
 
@@ -98,7 +100,10 @@ export default function ProfilePage() {
     api
       .get("/lines", { params: { model } })
       .then(({ data }) => {
-        if (!cancelled) setLines(data);
+        if (cancelled) return;
+
+        setLines(data);
+        setLine(data[0] || "");
       })
       .catch(() => {
         if (!cancelled) {
@@ -128,7 +133,12 @@ export default function ProfilePage() {
     api
       .get("/dates", { params: { model, line } })
       .then(({ data }) => {
-        if (!cancelled) setDates(data);
+        if (cancelled) return;
+
+        const sortedDates = [...data].sort((a, b) => b.localeCompare(a));
+
+        setDates(sortedDates);
+        setDate(sortedDates[0] || "");
       })
       .catch(() => {
         if (!cancelled) {
@@ -166,10 +176,10 @@ export default function ProfilePage() {
 
         setShifts(data);
 
-        // Chỉ có một ca thì tự động chọn
-        if (data.length === 1) {
-          setShift(data[0]);
-        }
+        // Ưu tiên ca đêm nếu ngày mới nhất có cả hai ca
+        const defaultShift = data.includes("DEM") ? "DEM" : data[0] || "";
+
+        setShift(defaultShift);
       })
       .catch(() => {
         if (!cancelled) {
@@ -313,7 +323,7 @@ export default function ProfilePage() {
             }}
           >
             {/* Model */}
-            <FormControl fullWidth size="small">
+            {/* <FormControl fullWidth size="small">
               <InputLabel>{t("filter.model")}</InputLabel>
               <Select
                 label={t("filter.model")}
@@ -327,7 +337,32 @@ export default function ProfilePage() {
                   </MenuItem>
                 ))}
               </Select>
-            </FormControl>
+            </FormControl> */}
+
+            <Autocomplete
+              fullWidth
+              size="small"
+              options={models}
+              value={model || null}
+              onChange={(_, newValue) => {
+                setModel(newValue || "");
+              }}
+              autoHighlight
+              openOnFocus
+              noOptionsText={t("filter.noOptions")}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label={t("filter.model")}
+                  placeholder={t("filter.placeholder")}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      minHeight: 44,
+                    },
+                  }}
+                />
+              )}
+            />
 
             {/* Line */}
             <FormControl fullWidth size="small" disabled={!model}>

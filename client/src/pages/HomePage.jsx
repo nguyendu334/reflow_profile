@@ -49,8 +49,7 @@ export default function HomePage() {
     {
       title: `${t("report.trend")}`,
       subtitle: `${t("report.trendSubtitle")}`,
-      description:
-        `${t("home.trendDescription")}`,
+      description: `${t("home.trendDescription")}`,
       icon: <ShowChartRounded sx={{ fontSize: 42 }} />,
       color: "#1976d2",
       bg: "#eaf3ff",
@@ -199,7 +198,10 @@ export default function HomePage() {
               {t("home.title")}
             </Typography>
 
-            <Typography color="text.secondary">
+            <Typography
+              color="text.secondary"
+              sx={{ fontSize: { xs: 20, md: 28 } }}
+            >
               {t("home.subtitle")}
             </Typography>
 

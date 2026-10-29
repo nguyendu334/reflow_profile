@@ -1,7 +1,7 @@
 {
   "home": {
     "title": "Reflow Monitoring System",
-    "subtitle": "SEOUL SEMI - Production Quality Monitoring",
+    "subtitle": "CTQ PROCESS",
     "selectReport": "Select a report to view",
     "trendDescription": "View Reflow temperature trends by model, month and year from Excel files.",
     "profileDescription": "View Temperature Profile reports in PDF format."
@@ -23,7 +23,9 @@
     "date": "Date",
     "shift": "Shift",
     "dayShift": "Day Shift",
-    "nightShift": "Night Shift"
+    "nightShift": "Night Shift",
+    "placeholder": "Enter to search Model...",
+    "noOptions": "Model not found"
   },
   "common": {
     "backHome": "Back to Home",

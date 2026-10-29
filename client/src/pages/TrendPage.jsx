@@ -5,6 +5,7 @@ import axios from "axios";
 
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   CircularProgress,
@@ -15,6 +16,7 @@ import {
   Paper,
   Select,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material";
 
@@ -203,21 +205,30 @@ export default function TrendPage() {
             }}
           >
             {/* Model */}
-            <FormControl fullWidth size="small">
-              <InputLabel>{t("filter.model")}</InputLabel>
-              <Select
-                label={t("filter.model")}
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                sx={{ height: 44 }}
-              >
-                {models.map((item) => (
-                  <MenuItem key={item} value={item}>
-                    {item}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Autocomplete
+              fullWidth
+              size="small"
+              options={models}
+              value={model || null}
+              onChange={(_, newValue) => {
+                setModel(newValue || "");
+              }}
+              autoHighlight
+              openOnFocus
+              noOptionsText={t("filter.noOptions")}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label={t("filter.model")}
+                  placeholder={t("filter.placeholder")}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      minHeight: 44,
+                    },
+                  }}
+                />
+              )}
+            />
 
             {/* Năm */}
             <FormControl fullWidth size="small">

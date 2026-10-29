@@ -1,7 +1,7 @@
 {
   "home": {
     "title": "리플로우 모니터링 시스템",
-    "subtitle": "SEOUL SEMI - 생산 품질 모니터링",
+    "subtitle": "CTQ PROCESS",
     "selectReport": "조회할 보고서를 선택하세요",
     "trendDescription": "Excel 파일에서 모델, 월, 연도별 리플로우 온도 추이를 확인합니다.",
     "profileDescription": "PDF 형식의 온도 프로파일 보고서를 확인합니다."
@@ -23,7 +23,9 @@
     "date": "날짜",
     "shift": "근무조",
     "dayShift": "주간",
-    "nightShift": "야간"
+    "nightShift": "야간",
+    "placeholder": "모델을 검색하세요...",
+    "noOptions": "모델을 찾을 수 없습니다."
   },
   "common": {
     "backHome": "홈으로",

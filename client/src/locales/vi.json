@@ -1,7 +1,7 @@
 {
   "home": {
     "title": "HỆ THỐNG GIÁM SÁT REFLOW",
-    "subtitle": "SEOUL SEMI - Giám sát chất lượng sản xuất",
+    "subtitle": "CTQ PROCESS",
     "selectReport": "Chọn loại báo cáo cần xem",
     "trendDescription": "Xem biểu đồ nhiệt độ Reflow theo Model, Tháng và Năm từ file Excel.",
     "profileDescription": "Xem báo cáo Temperature Profile dạng PDF."
@@ -23,7 +23,9 @@
     "date": "Ngày",
     "shift": "Ca làm việc",
     "dayShift": "Ca ngày",
-    "nightShift": "Ca đêm"
+    "nightShift": "Ca đêm",
+    "placeholder": "Nhập để tìm Model...",
+    "noOptions": "Không tìm thấy Model"
   },
   "common": {
     "backHome": "Về trang chủ",
