@@ -490,81 +490,78 @@ export default function ProfilePage() {
               </Typography>
 
               {/* Dấu xác nhận */}
-
-              {/* Dấu phê duyệt YUJIN ENC VINA */}
               <Box
                 sx={{
-                  width: 320,
-                  maxWidth: "100%",
-                  border: "1px solid #222",
-                  bgcolor: "#fff",
-                  flexShrink: 0,
-                  boxSizing: "border-box",
+                  display: "flex",
+                  justifyContent: { xs: "center", md: "flex-end" },
+                  mb: 2,
                 }}
               >
-                {/* Hàng tiêu đề */}
                 <Box
                   sx={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(4, 1fr)",
-                    borderBottom: "1px solid #222",
+                    width: { xs: 260, sm: 320, md: 360 },
+                    maxWidth: "100%",
+                    border: "1px solid #333",
+                    bgcolor: "#fff",
+                    color: "#111",
                   }}
                 >
-                  {["Lập", "Kiểm tra", "Xác nhận", "Duyệt"].map(
-                    (item, index) => (
+                  {/* Hàng tiêu đề */}
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(4, 1fr)",
+                      borderBottom: "1px solid #333",
+                    }}
+                  >
+                    {["Lập", "Kiểm tra", "Xác nhận", "Duyệt"].map((item) => (
                       <Box
                         key={item}
                         sx={{
                           textAlign: "center",
-                          py: 0.6,
-                          borderRight: index < 3 ? "1px solid #222" : "none",
+                          fontWeight: 700,
+                          fontSize: { xs: 10, sm: 12, md: 13 },
+                          py: { xs: 0.5, md: 0.75 },
+                          borderRight:
+                            item !== "Duyệt" ? "1px solid #333" : "none",
                         }}
                       >
-                        <Typography
-                          sx={{
-                            fontSize: 13,
-                            fontWeight: 700,
-                            color: "#111",
-                          }}
-                        >
-                          {item}
-                        </Typography>
+                        {item}
                       </Box>
-                    ),
-                  )}
-                </Box>
+                    ))}
+                  </Box>
 
-                {/* Nội dung phê duyệt */}
-                <Box sx={{ p: 0.8 }}>
-                  <Box
-                    sx={{
-                      border: "2px solid #17439b",
-                      textAlign: "center",
-                      py: 0.4,
-                      px: 0.5,
-                    }}
-                  >
-                    <Typography
+                  {/* Dấu phê duyệt */}
+                  <Box sx={{ p: { xs: 0.75, md: 1 } }}>
+                    <Box
                       sx={{
-                        color: "#17439b",
-                        fontSize: 15,
-                        fontWeight: 900,
-                        lineHeight: 1.2,
+                        border: "2px solid #194a9e",
+                        textAlign: "center",
+                        color: "#194a9e",
+                        px: 1,
+                        py: { xs: 0.5, md: 0.75 },
                       }}
                     >
-                      YUJIN ENC VINA
-                    </Typography>
+                      <Typography
+                        sx={{
+                          fontWeight: 800,
+                          fontSize: { xs: 13, sm: 15, md: 17 },
+                          lineHeight: 1.25,
+                        }}
+                      >
+                        YUJIN ENC VINA
+                      </Typography>
 
-                    <Typography
-                      sx={{
-                        color: "#17439b",
-                        fontSize: 11,
-                        fontWeight: 900,
-                        lineHeight: 1.3,
-                      }}
-                    >
-                      ĐÃ PHÊ DUYỆT - APPROVED
-                    </Typography>
+                      <Typography
+                        sx={{
+                          fontWeight: 700,
+                          fontSize: { xs: 9, sm: 11, md: 13 },
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        ĐÃ PHÊ DUYỆT - APPROVED
+                      </Typography>
+                    </Box>
                   </Box>
                 </Box>
               </Box>
