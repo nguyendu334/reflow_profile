@@ -25,7 +25,10 @@
     "dayShift": "Ca ngày",
     "nightShift": "Ca đêm",
     "placeholder": "Nhập để tìm Model...",
-    "noOptions": "Không tìm thấy Model"
+    "noOptions": "Không tìm thấy Model",
+    "category": "Danh mục",
+    "mass": "Đại trà",
+    "sample": "Mẫu"
   },
   "common": {
     "backHome": "Về trang chủ",

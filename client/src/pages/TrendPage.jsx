@@ -176,17 +176,22 @@ export default function TrendPage() {
               <AssessmentRounded sx={{ color: "#fff", fontSize: 28 }} />
             </Box>
 
-            <Box>
+            <Box
+              sx={{
+                height: 48,
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
               <Typography
                 variant="h5"
                 fontWeight={700}
-                sx={{ fontSize: { xs: 20, md: 24 } }}
+                sx={{
+                  fontSize: { xs: 20, md: 24 },
+                  lineHeight: 1.2,
+                }}
               >
                 {t("report.trend")}
-              </Typography>
-
-              <Typography variant="body2" color="text.secondary">
-                SEOUL SEMI - {t("report.trend")}
               </Typography>
             </Box>
           </Stack>

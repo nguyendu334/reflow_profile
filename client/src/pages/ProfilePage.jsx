@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-
 import {
   Alert,
   Autocomplete,
@@ -19,38 +18,31 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-
 import {
   ArrowBackRounded,
   PictureAsPdfRounded,
   SearchRounded,
 } from "@mui/icons-material";
-
 import { useTranslation } from "react-i18next";
-
 import ReportViewer from "../components/ReportViewer";
 
-const api = axios.create({
-  baseURL: "/api/profiles",
-});
+const api = axios.create({ baseURL: "/api/profiles" });
 
 export default function ProfilePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
+  const [profileType, setProfileType] = useState("mass");
   const [models, setModels] = useState([]);
   const [model, setModel] = useState("");
-
   const [lines, setLines] = useState([]);
   const [line, setLine] = useState("");
-
   const [dates, setDates] = useState([]);
   const [date, setDate] = useState("");
-
   const [shifts, setShifts] = useState([]);
   const [shift, setShift] = useState("");
-
   const [loading, setLoading] = useState(false);
+  const [loadingModels, setLoadingModels] = useState(false);
   const [loadingShifts, setLoadingShifts] = useState(false);
   const [error, setError] = useState("");
   const [reportUrl, setReportUrl] = useState("");
@@ -61,27 +53,46 @@ export default function ProfilePage() {
     DEM: t("filter.nightShift"),
   };
 
-  // Lấy danh sách Model
+  // Chuyển loại: xóa ngay dữ liệu cũ, tránh chọn nhầm PDF của loại trước.
+  const handleTypeChange = (event) => {
+    setProfileType(event.target.value);
+    setModels([]);
+    setModel("");
+    setLines([]);
+    setLine("");
+    setDates([]);
+    setDate("");
+    setShifts([]);
+    setShift("");
+    setReportUrl("");
+    setReportTitle("");
+    setError("");
+  };
+
+  // Chỉ lấy danh sách Model của loại được chọn.
   useEffect(() => {
     let cancelled = false;
+    setLoadingModels(true);
+    setError("");
 
     api
-      .get("/models")
+      .get("/models", { params: { type: profileType } })
       .then(({ data }) => {
-        if (!cancelled) setModels(data);
+        if (!cancelled) setModels(Array.isArray(data) ? data : []);
       })
       .catch(() => {
-        if (!cancelled) {
-          setError("Không đọc được danh sách Profile");
-        }
+        if (!cancelled) setError("Không đọc được danh sách Profile");
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingModels(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [profileType]);
 
-  // Khi đổi Model
+  // Khi đổi Model: tải Line thuộc đúng loại + Model.
   useEffect(() => {
     setLine("");
     setLines([]);
@@ -92,31 +103,25 @@ export default function ProfilePage() {
     setReportUrl("");
     setReportTitle("");
     setError("");
-
     if (!model) return;
 
     let cancelled = false;
-
     api
-      .get("/lines", { params: { model } })
+      .get("/lines", { params: { type: profileType, model } })
       .then(({ data }) => {
         if (cancelled) return;
-
         setLines(data);
         setLine(data[0] || "");
       })
       .catch(() => {
-        if (!cancelled) {
-          setError("Không đọc được danh sách Line");
-        }
+        if (!cancelled) setError("Không đọc được danh sách Line");
       });
-
     return () => {
       cancelled = true;
     };
-  }, [model]);
+  }, [model, profileType]);
 
-  // Khi đổi Line
+  // Khi đổi Line: chọn ngày có dữ liệu mới nhất.
   useEffect(() => {
     setDate("");
     setDates([]);
@@ -125,40 +130,32 @@ export default function ProfilePage() {
     setReportUrl("");
     setReportTitle("");
     setError("");
-
     if (!model || !line) return;
 
     let cancelled = false;
-
     api
-      .get("/dates", { params: { model, line } })
+      .get("/dates", { params: { type: profileType, model, line } })
       .then(({ data }) => {
         if (cancelled) return;
-
         const sortedDates = [...data].sort((a, b) => b.localeCompare(a));
-
         setDates(sortedDates);
         setDate(sortedDates[0] || "");
       })
       .catch(() => {
-        if (!cancelled) {
-          setError("Không đọc được danh sách ngày");
-        }
+        if (!cancelled) setError("Không đọc được danh sách ngày");
       });
-
     return () => {
       cancelled = true;
     };
-  }, [model, line]);
+  }, [model, line, profileType]);
 
-  // Khi đổi Ngày: lấy danh sách ca
+  // Khi đổi ngày: lấy các ca sẵn có, ưu tiên ca đêm như bản cũ.
   useEffect(() => {
     setShift("");
     setShifts([]);
     setReportUrl("");
     setReportTitle("");
     setError("");
-
     if (!model || !line || !date) {
       setLoadingShifts(false);
       return;
@@ -166,69 +163,45 @@ export default function ProfilePage() {
 
     let cancelled = false;
     setLoadingShifts(true);
-
     api
-      .get("/shifts", {
-        params: { model, line, date },
-      })
+      .get("/shifts", { params: { type: profileType, model, line, date } })
       .then(({ data }) => {
         if (cancelled) return;
-
         setShifts(data);
-
-        // Ưu tiên ca đêm nếu ngày mới nhất có cả hai ca
-        const defaultShift = data.includes("DEM") ? "DEM" : data[0] || "";
-
-        setShift(defaultShift);
+        setShift(data.includes("DEM") ? "DEM" : data[0] || "");
       })
       .catch(() => {
-        if (!cancelled) {
-          setError("Không đọc được danh sách ca làm việc");
-        }
+        if (!cancelled) setError("Không đọc được danh sách ca làm việc");
       })
       .finally(() => {
         if (!cancelled) setLoadingShifts(false);
       });
-
     return () => {
       cancelled = true;
     };
-  }, [model, line, date]);
+  }, [model, line, date, profileType]);
 
-  // Thu hồi URL blob khi đổi báo cáo hoặc rời trang
   useEffect(() => {
     return () => {
-      if (reportUrl) {
-        URL.revokeObjectURL(reportUrl);
-      }
+      if (reportUrl) URL.revokeObjectURL(reportUrl);
     };
   }, [reportUrl]);
 
   const handleView = async () => {
-    if (!model || !line || !date || !shift) return;
-
+    if (!model || !line || !date || !shift || loading) return;
     setLoading(true);
     setError("");
     setReportUrl("");
     setReportTitle("");
-
     try {
       const response = await api.get("/view", {
-        params: { model, line, date, shift },
+        params: { type: profileType, model, line, date, shift },
         responseType: "blob",
       });
-
-      const blob = new Blob([response.data], {
-        type: "application/pdf",
-      });
-
+      const blob = new Blob([response.data], { type: "application/pdf" });
       setReportTitle(
-        `${model} - ${line} - ${date
-          .split("-")
-          .reverse()
-          .join("/")} - ${SHIFT_LABELS[shift] || shift}`,
+        `${model} - ${line} - ${date.split("-").reverse().join("/")} - ${SHIFT_LABELS[shift] || shift}`,
       );
-
       setReportUrl(URL.createObjectURL(blob));
     } catch {
       setError("Không thể mở báo cáo Temperature Profile");
@@ -258,7 +231,8 @@ export default function ProfilePage() {
           sx={{
             p: { xs: 2, md: 3 },
             borderRadius: 3,
-            border: "1px solid #e3e8ef",
+            border: "1px solid",
+            borderColor: "divider",
             boxShadow: "0 3px 12px rgba(0,0,0,0.04)",
           }}
         >
@@ -266,15 +240,11 @@ export default function ProfilePage() {
             variant="outlined"
             startIcon={<ArrowBackRounded />}
             onClick={() => navigate("/")}
-            sx={{
-              mb: 3,
-              textTransform: "none",
-            }}
+            sx={{ mb: 3, textTransform: "none" }}
           >
             {t("report.backHome")}
           </Button>
 
-          {/* Header */}
           <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
             <Box
               sx={{
@@ -291,64 +261,69 @@ export default function ProfilePage() {
             >
               <PictureAsPdfRounded sx={{ fontSize: 30 }} />
             </Box>
-
-            <Box>
+            <Box
+              sx={{
+                height: 48,
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
               <Typography
                 variant="h5"
                 fontWeight={700}
                 sx={{
                   fontSize: { xs: 20, md: 24 },
+                  lineHeight: 1.2,
                 }}
               >
                 {t("report.profile")}
               </Typography>
-
-              <Typography variant="body2" color="text.secondary">
-                SEOUL SEMI - {t("report.profile")}
-              </Typography>
             </Box>
           </Stack>
 
-          {/* Bộ lọc */}
           <Box
             sx={{
               display: "grid",
               gridTemplateColumns: {
-                xs: "1fr",
+                xs: "minmax(0, 1fr)",
                 sm: "repeat(2, minmax(0, 1fr))",
-                lg: "minmax(220px, 2fr) repeat(3, minmax(125px, 1fr)) auto",
+                lg: "minmax(125px, 0.9fr) minmax(210px, 2fr) repeat(3, minmax(115px, 1fr)) auto",
               },
               gap: 2,
               alignItems: "center",
             }}
           >
-            {/* Model */}
-            {/* <FormControl fullWidth size="small">
-              <InputLabel>{t("filter.model")}</InputLabel>
+            <FormControl fullWidth size="small">
+              <InputLabel id="profile-type-label">
+                {t("filter.category", { defaultValue: "Category" })}
+              </InputLabel>
               <Select
-                label={t("filter.model")}
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
+                labelId="profile-type-label"
+                label={t("filter.category", {
+                  defaultValue: "Category",
+                })}
+                value={profileType}
+                onChange={handleTypeChange}
                 sx={{ height: 44 }}
               >
-                {models.map((item) => (
-                  <MenuItem key={item} value={item}>
-                    {item}
-                  </MenuItem>
-                ))}
+                <MenuItem value="mass">
+                  {t("filter.mass", { defaultValue: "Mass" })}
+                </MenuItem>
+                <MenuItem value="sample">
+                  {t("filter.sample", { defaultValue: "Sample" })}
+                </MenuItem>
               </Select>
-            </FormControl> */}
+            </FormControl>
 
             <Autocomplete
               fullWidth
               size="small"
               options={models}
               value={model || null}
-              onChange={(_, newValue) => {
-                setModel(newValue || "");
-              }}
+              onChange={(_, newValue) => setModel(newValue || "")}
               autoHighlight
               openOnFocus
+              loading={loadingModels}
               noOptionsText={t("filter.noOptions")}
               renderInput={(params) => (
                 <TextField
@@ -364,7 +339,6 @@ export default function ProfilePage() {
               )}
             />
 
-            {/* Line */}
             <FormControl fullWidth size="small" disabled={!model}>
               <InputLabel>{t("filter.line")}</InputLabel>
               <Select
@@ -381,7 +355,6 @@ export default function ProfilePage() {
               </Select>
             </FormControl>
 
-            {/* Ngày */}
             <FormControl fullWidth size="small" disabled={!line}>
               <InputLabel>{t("filter.date")}</InputLabel>
               <Select
@@ -398,7 +371,6 @@ export default function ProfilePage() {
               </Select>
             </FormControl>
 
-            {/* Ca làm việc */}
             <FormControl
               fullWidth
               size="small"
@@ -419,7 +391,6 @@ export default function ProfilePage() {
               </Select>
             </FormControl>
 
-            {/* Xem báo cáo */}
             <Button
               variant="contained"
               disabled={
@@ -442,11 +413,7 @@ export default function ProfilePage() {
                 textTransform: "none",
                 fontWeight: 600,
                 boxShadow: "0 2px 5px rgba(25,118,210,0.2)",
-                gridColumn: {
-                  xs: "1 / -1",
-                  sm: "1 / -1",
-                  lg: "auto",
-                },
+                gridColumn: { xs: "1 / -1", sm: "1 / -1", lg: "auto" },
               }}
             >
               {loading ? t("report.loading") : t("report.view")}
@@ -460,15 +427,8 @@ export default function ProfilePage() {
           )}
         </Paper>
 
-        {/* Hiển thị PDF */}
         {reportUrl && (
-          <Paper
-            sx={{
-              mt: 2,
-              p: { xs: 1, md: 2 },
-              borderRadius: 3,
-            }}
-          >
+          <Paper sx={{ mt: 2, p: { xs: 1, md: 2 }, borderRadius: 3 }}>
             <Box
               sx={{
                 display: "flex",
@@ -481,15 +441,12 @@ export default function ProfilePage() {
             >
               <Typography
                 variant="h6"
-                sx={{
-                  fontSize: { xs: 16, md: 20 },
-                  overflowWrap: "anywhere",
-                }}
+                sx={{ fontSize: { xs: 16, md: 20 }, overflowWrap: "anywhere" }}
               >
                 {reportTitle}
               </Typography>
 
-              {/* Dấu xác nhận */}
+              {/* Dấu xác nhận: giữ nguyên thiết kế và kích thước responsive */}
               <Box
                 sx={{
                   display: "flex",
@@ -506,7 +463,6 @@ export default function ProfilePage() {
                     color: "#111",
                   }}
                 >
-                  {/* Hàng tiêu đề */}
                   <Box
                     sx={{
                       display: "grid",
@@ -530,8 +486,6 @@ export default function ProfilePage() {
                       </Box>
                     ))}
                   </Box>
-
-                  {/* Dấu phê duyệt */}
                   <Box sx={{ p: { xs: 0.75, md: 1 } }}>
                     <Box
                       sx={{
@@ -551,7 +505,6 @@ export default function ProfilePage() {
                       >
                         YUJIN ENC VINA
                       </Typography>
-
                       <Typography
                         sx={{
                           fontWeight: 700,
@@ -566,7 +519,6 @@ export default function ProfilePage() {
                 </Box>
               </Box>
             </Box>
-
             <ReportViewer url={reportUrl} />
           </Paper>
         )}

@@ -25,7 +25,10 @@
     "dayShift": "Day Shift",
     "nightShift": "Night Shift",
     "placeholder": "Enter to search Model...",
-    "noOptions": "Model not found"
+    "noOptions": "Model not found",
+    "category": "Category",
+    "mass": "Mass",
+    "sample": "Sample"
   },
   "common": {
     "backHome": "Back to Home",

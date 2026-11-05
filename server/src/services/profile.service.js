@@ -6,34 +6,71 @@ const PROFILE_DIR = process.env.PROFILE_DIR;
 const FILE_PATTERN =
   /^(.+?)\s+(LINE\s+[A-Z0-9_-]+)\s+(NGAY|DEM)\s+(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{4})(?:\s+(\d+))?\s*\.pdf$/i;
 
-// Cache danh sách thư mục Model trong 60 giây
+// Cache trong 60 giây
 const CACHE_TTL = 60_000;
 
-let modelFoldersCache = null;
-let modelFoldersTime = 0;
-let modelFoldersPending = null;
+// Cache thư mục Model theo từng loại
+const modelFoldersCache = new Map();
+const modelFoldersPending = new Map();
 
+// Cache danh sách PDF theo loại + Model
 const profileCache = new Map();
 
-// Lấy các thư mục Model trong tất cả thư mục năm
-async function scanModelFolders() {
-  const years = await fs.readdir(PROFILE_DIR, {
+// ==========================================
+// 1. Xác định thư mục theo loại Profile
+// ==========================================
+
+function validateProfileType(type = "mass") {
+  if (!["mass", "sample"].includes(type)) {
+    const error = new Error("Loại Profile không hợp lệ");
+    error.status = 400;
+    throw error;
+  }
+
+  return type;
+}
+
+async function getTypeFolders(type = "mass") {
+  validateProfileType(type);
+
+  const entries = await fs.readdir(PROFILE_DIR, {
     withFileTypes: true,
   });
 
   const folders = [];
 
-  for (const year of years) {
-    if (!year.isDirectory()) continue;
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
 
-    // Nhận cả "2026-Profile" và "2026- Profile"
-    if (!/^\d{4}\s*-\s*profile$/i.test(year.name)) {
-      continue;
+    const name = entry.name.trim();
+
+    if (type === "mass") {
+      // Ví dụ: 2026- Profile, 2025-Profile
+      if (/^\d{4}\s*-\s*profile$/i.test(name)) {
+        folders.push(path.join(PROFILE_DIR, entry.name));
+      }
+    } else {
+      // Ví dụ: Profile mẫu 2026
+      if (/^profile\s+mẫu\s+\d{4}$/i.test(name)) {
+        folders.push(path.join(PROFILE_DIR, entry.name));
+      }
     }
+  }
 
-    const yearPath = path.join(PROFILE_DIR, year.name);
+  return folders;
+}
 
-    const models = await fs.readdir(yearPath, {
+// ==========================================
+// 2. Lấy Model từ tên thư mục
+// ==========================================
+
+async function scanModelFolders(type = "mass") {
+  const typeFolders = await getTypeFolders(type);
+
+  const folders = [];
+
+  for (const typeFolder of typeFolders) {
+    const models = await fs.readdir(typeFolder, {
       withFileTypes: true,
     });
 
@@ -46,7 +83,7 @@ async function scanModelFolders() {
 
       folders.push({
         model,
-        folderPath: path.join(yearPath, item.name),
+        folderPath: path.join(typeFolder, item.name),
       });
     }
   }
@@ -54,36 +91,54 @@ async function scanModelFolders() {
   return folders;
 }
 
-async function getModelFolders() {
-  if (modelFoldersCache && Date.now() - modelFoldersTime < CACHE_TTL) {
-    return modelFoldersCache;
+async function getModelFolders(type = "mass") {
+  validateProfileType(type);
+
+  const cached = modelFoldersCache.get(type);
+
+  if (cached && Date.now() - cached.time < CACHE_TTL) {
+    return cached.data;
   }
 
-  if (modelFoldersPending) {
-    return modelFoldersPending;
+  if (modelFoldersPending.has(type)) {
+    return modelFoldersPending.get(type);
   }
 
-  modelFoldersPending = scanModelFolders()
+  const pending = scanModelFolders(type)
     .then((folders) => {
-      modelFoldersCache = folders;
-      modelFoldersTime = Date.now();
+      modelFoldersCache.set(type, {
+        data: folders,
+        time: Date.now(),
+      });
+
       return folders;
     })
     .finally(() => {
-      modelFoldersPending = null;
+      modelFoldersPending.delete(type);
     });
 
-  return modelFoldersPending;
+  modelFoldersPending.set(type, pending);
+
+  return pending;
 }
 
-// API Model: không quét file PDF
-export async function getProfileModels() {
-  const folders = await getModelFolders();
+// ==========================================
+// 3. API lấy danh sách Model
+// ==========================================
 
-  return [...new Set(folders.map((item) => item.model))].sort();
+export async function getProfileModels(type = "mass") {
+  const folders = await getModelFolders(type);
+
+  return [...new Set(folders.map((item) => item.model))].sort((a, b) =>
+    a.localeCompare(b, undefined, {
+      numeric: true,
+    }),
+  );
 }
 
-// Chuyển tên file PDF thành dữ liệu báo cáo
+// ==========================================
+// 4. Phân tích tên file PDF
+// ==========================================
 
 function parseProfile(fileName, fullPath, folderModel) {
   const match = fileName.match(FILE_PATTERN);
@@ -117,16 +172,17 @@ function parseProfile(fileName, fullPath, folderModel) {
   };
 }
 
-// Chỉ quét file PDF thuộc Model được chọn
+// ==========================================
+// 5. Quét PDF của Model được chọn
+// ==========================================
 
-async function scanModelProfiles(model) {
-  const folders = await getModelFolders();
+async function scanModelProfiles(model, type = "mass") {
+  const folders = await getModelFolders(type);
 
   const selectedFolders = folders.filter((item) => item.model === model);
 
   const profiles = [];
 
-  // Quét PDF trong thư mục Model và mọi thư mục con
   async function scanDirectory(directory, folderModel) {
     const entries = await fs.readdir(directory, {
       withFileTypes: true,
@@ -136,6 +192,8 @@ async function scanModelProfiles(model) {
       const fullPath = path.join(directory, entry.name);
 
       if (entry.isDirectory()) {
+        // Hỗ trợ Model -> Tháng -> PDF
+        // Và Model -> PDF trực tiếp
         await scanDirectory(fullPath, folderModel);
         continue;
       }
@@ -159,11 +217,18 @@ async function scanModelProfiles(model) {
   return profiles;
 }
 
-// Cache danh sách PDF riêng theo từng Model
-export async function getProfilesByModel(model) {
-  const cached = profileCache.get(model);
+// ==========================================
+// 6. Cache PDF theo loại + Model
+// ==========================================
 
-  if (cached && Date.now() - cached.time < CACHE_TTL) {
+export async function getProfilesByModel(model, type = "mass") {
+  validateProfileType(type);
+
+  const cacheKey = JSON.stringify([type, model]);
+
+  const cached = profileCache.get(cacheKey);
+
+  if (cached?.data && Date.now() - cached.time < CACHE_TTL) {
     return cached.data;
   }
 
@@ -171,9 +236,9 @@ export async function getProfilesByModel(model) {
     return cached.pending;
   }
 
-  const pending = scanModelProfiles(model)
+  const pending = scanModelProfiles(model, type)
     .then((data) => {
-      profileCache.set(model, {
+      profileCache.set(cacheKey, {
         data,
         time: Date.now(),
       });
@@ -181,31 +246,35 @@ export async function getProfilesByModel(model) {
       return data;
     })
     .catch((error) => {
-      profileCache.delete(model);
+      profileCache.delete(cacheKey);
       throw error;
     });
 
-  profileCache.set(model, {
-    pending,
-  });
+  profileCache.set(cacheKey, { pending });
 
   return pending;
 }
 
-// Giữ tương thích với API cũ
-export async function getProfiles() {
-  const models = await getProfileModels();
+// ==========================================
+// 7. Giữ tương thích với API cũ
+// ==========================================
+
+export async function getProfiles(type = "mass") {
+  const models = await getProfileModels(type);
 
   const results = await Promise.all(
-    models.map((model) => getProfilesByModel(model)),
+    models.map((model) => getProfilesByModel(model, type)),
   );
 
   return results.flat();
 }
 
-// Tìm PDF theo Model + Line + Ngày + Ca
-export async function findProfile(model, line, date, shift) {
-  const profiles = await getProfilesByModel(model);
+// ==========================================
+// 8. Tìm PDF theo bộ lọc
+// ==========================================
+
+export async function findProfile(model, line, date, shift, type = "mass") {
+  const profiles = await getProfilesByModel(model, type);
 
   const matches = profiles
     .filter(
